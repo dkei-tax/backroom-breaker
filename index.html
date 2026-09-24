@@ -46,7 +46,12 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
   font-family:"Dela Gothic One",sans-serif;font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   box-shadow:0 3px 0 var(--line);padding:0}
 .stage-grid button small{font-family:"M PLUS Rounded 1c",sans-serif;font-weight:800;font-size:10px;color:var(--pink)}
-.stage-grid button:disabled{opacity:.35;box-shadow:none;border-style:dashed;cursor:default}
+.stage-grid button small.ok{color:var(--green);font-size:9px}
+.stage-grid button.done{background:#DDF3C9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .stage-grid button.done{background:#2F4A22}}
+:root[data-theme="dark"] .stage-grid button.done{background:#2F4A22}
+.hud .btn small{display:block;font-size:9px;line-height:1}
+#btn-weapon{line-height:1.1;background:#FFE26B;color:#2B2410}
 .pts{margin:0;font-weight:800}
 .howto{max-width:340px;width:100%;text-align:left;background:var(--paper);border:3px solid var(--line);border-radius:14px;padding:10px 14px}
 .howto summary{font-weight:800;cursor:pointer}
@@ -96,7 +101,7 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
   <section id="title" class="screen on">
     <canvas id="hero-cv" width="440" height="340" aria-hidden="true"></canvas>
     <h1><small>ムキムキ脱出！</small>バックルーム・<br>ブレイカー</h1>
-    <p class="lead">出口がないなら、作ればいい。ハンマーでカベをこわして、10のステージから脱出しよう。</p>
+    <p class="lead">出口がないなら、作ればいい。ハンマーでカベをこわして、20のステージから脱出しよう。どのステージからでもあそべるよ。</p>
     <button class="btn big" id="btn-play">あそぶ</button>
     <div class="stage-grid" id="stage-grid"></div>
     <p class="pts">筋肉ポイント <span id="title-pts">0</span></p>
@@ -107,7 +112,9 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
         <li>ヒビのあるカベはハンマーでこわせる。灰色の鉄のカベはこわせない</li>
         <li>ハンマーボタンを長押しすると「ぐるぐるハンマー」でまわりを全部こわす</li>
         <li>ムキムキボタンで、近くの敵をびっくりさせて止める</li>
-        <li>パソコンは 矢印キーで移動、スペースでハンマー、Xでぐるぐる、Zでムキムキ</li>
+        <li>上の「ぶき」ボタンでロングハンマーに切りかえ。前の3マスまでとどく！（そのかわり少しおそい）</li>
+        <li>かげおばけはヒビのカベの中を通ってくるので気をつけて</li>
+        <li>パソコンは 矢印キーで移動、スペースでハンマー、Xでぐるぐる、Zでムキムキ、Qでぶき切りかえ</li>
       </ul>
     </details>
   </section>
@@ -119,6 +126,7 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
         <div id="hud-stage"></div>
         <div id="hud-stats"></div>
       </div>
+      <button class="btn" id="btn-weapon"><small>ぶき</small>ふつう</button>
       <button class="btn" id="btn-sound" aria-pressed="true">音あり</button>
     </header>
     <div id="stage-wrap">
@@ -134,7 +142,7 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
       </div>
       <div class="acts">
         <button class="round" id="btn-pose">ムキムキ<small>ポーズ</small><span class="cd"></span></button>
-        <button class="round" id="btn-hammer">ハンマー<small>長押しで<br>ぐるぐる</small><span class="cd"></span></button>
+        <button class="round" id="btn-hammer"><span id="hammer-label">ハンマー</span><small>長押しで<br>ぐるぐる</small><span class="cd"></span></button>
       </div>
     </div>
   </section>
@@ -166,12 +174,26 @@ const STAGES=[
  {name:'無限階段',w:11,h:15,steel:.1,carve:80,enemies:{moya:2},bulbs:true,hole:true,items:['protein','banana'],tip:'電球が落ちてくる！カギを3つ集めたら、光る床をハンマーでこわして下へ。'},
  {name:'鉄のカベ迷路',w:11,h:15,steel:.3,carve:60,enemies:{moya:3},items:['protein','banana','banana'],tip:'鉄のカベだらけ。バナナを食べると、鉄もこわせるパワーに！'},
  {name:'おもちゃの部屋',w:11,h:15,steel:.08,carve:90,enemies:{moya:2,box:1},balloons:14,items:['protein','dumbbell'],tip:'カギは風船の中。どんどんわって探そう。'},
- {name:'ボス：バックルームの主',w:11,h:15,steel:.05,boss:{hp:10,speed:620,kind:2,summon:true},flicker:true,bulbs:true,items:['protein','protein','light'],tip:'さいごのボス！ハンマーを10回当てて、元の世界に帰ろう！'}
+ {name:'ボス：バックルームの主',w:11,h:15,steel:.05,boss:{hp:10,speed:620,kind:2,summon:true},flicker:true,bulbs:true,items:['protein','protein','light'],tip:'ハンマーを10回当てて、バックルームの主をたおせ！'},
+ {name:'暗やみオフィス',w:11,h:15,steel:.1,carve:80,enemies:{moya:3},flicker:true,items:['light','protein','dumbbell'],tip:'主をたおしても、まだ出口は続いていた…。暗いオフィスを進もう。'},
+ {name:'つるつるスケートリンク',w:11,h:15,steel:.08,carve:90,enemies:{moya:2,box:1},water:.45,items:['protein','dumbbell'],tip:'床のほとんどがつるつる！すべる向きをよく考えよう。'},
+ {name:'ダンボール大迷宮',w:13,h:15,steel:.18,carve:90,enemies:{box:4},crates:20,items:['banana','protein','dumbbell'],tip:'ダンボールだらけ。カギ3つがどこかにかくれているぞ。'},
+ {name:'かげおばけの部屋',w:11,h:15,steel:.1,carve:80,enemies:{kage:3},items:['protein','dumbbell'],tip:'かげおばけはヒビのカベの中を通ってくる！カベの中にいても、ハンマーでたおせるよ。'},
+ {name:'ボス：鉄のロボ',w:11,h:15,steel:.06,boss:{hp:8,speed:560,kind:3},bulbs:true,items:['protein','protein'],tip:'鉄のロボは足が速い！ハンマーを8回当てろ。ロングハンマーも使ってみよう。'},
+ {name:'大きなプール',w:13,h:17,steel:.1,carve:100,enemies:{moya:3},pool:true,water:.15,items:['protein','dumbbell'],tip:'広いプールの部屋。浮き輪をさがして、向こう岸へわたろう。'},
+ {name:'電球の嵐',w:11,h:15,steel:.15,carve:80,enemies:{moya:2,kage:1},bulbs:true,hole:true,items:['protein','banana'],tip:'電球がどんどん落ちてくる！カギを3つ集めたら、光る床をこわして下へ。'},
+ {name:'風船パーティ',w:13,h:15,steel:.1,carve:100,enemies:{box:2,kage:1},balloons:20,flicker:true,items:['protein','light','dumbbell'],tip:'暗い中で風船パーティ。風船をわってカギを探そう。'},
+ {name:'さいごの大迷路',w:13,h:17,steel:.32,carve:100,enemies:{moya:3,kage:2},water:.1,items:['protein','banana','banana','banana'],tip:'鉄のカベの大迷路。バナナパワーで道を作れ！'},
+ {name:'ボス：バックルームの王',w:13,h:17,steel:.06,boss:{hp:14,speed:520,kind:4,summon:true},flicker:true,bulbs:true,items:['protein','protein','protein','light'],tip:'ほんとうのさいごのボス！ハンマーを14回当てて、元の世界に帰ろう！'}
 ];
+const LAST=STAGES.length-1;
 
 /* ---------- 保存 ---------- */
-let S={unlocked:1,points:0};
-try{const s=JSON.parse(localStorage.getItem('muki-save'));if(s&&typeof s.unlocked==='number')S=s;}catch(e){}
+let S={unlocked:1,points:0,cleared:[],weapon:'hammer'};
+try{const s=JSON.parse(localStorage.getItem('muki-save'));if(s&&typeof s.unlocked==='number')S=Object.assign(S,s);}catch(e){}
+// 旧セーブ：unlocked より前のステージはクリア済みとみなす
+if(!Array.isArray(S.cleared)||!S.cleared.length){S.cleared=[];for(let i=0;i<S.unlocked-1;i++)S.cleared.push(i);}
+if(S.weapon!=='long')S.weapon='hammer';
 function save(){try{localStorage.setItem('muki-save',JSON.stringify(S));}catch(e){}}
 
 /* ---------- 音 ---------- */
@@ -250,6 +272,7 @@ function gen(st){
     for(const k in (st.enemies||{}))for(let i=0;i<st.enemies[k];i++){
       const c=take(c=>c.d>=6,false);if(!c)continue;t[c.y][c.x]=F;
       enemies.push({type:k,x:c.x,y:c.y,fx:c.x,fy:c.y,t0:-9999,next:1500+rand(800),stun:0});}
+    if(st.water)for(const c of reach)if(t[c.y][c.x]===F&&!used.has(c.x+','+c.y)&&Math.random()<st.water)t[c.y][c.x]=WA;
     return {t,items,hidden,start:{x:sx,y:sy},band,enemies,boss,bossExit};
   }
 }
@@ -269,9 +292,9 @@ function startStage(i){
   const st=STAGES[i],m=gen(st);
   G={i,st,w:st.w,h:st.h,t:m.t,items:m.items,hidden:m.hidden,band:m.band,enemies:m.enemies,boss:m.boss,bossExit:m.bossExit,
     p:{x:m.start.x,y:m.start.y,mov:null,dx:0,dy:-1,hearts:3,inv:0,keys:0,float:false,light:false,banana:0,pose:-9999,swing:-9999,spin:-9999,nextMove:0},
-    particles:[],texts:[],hazards:[],poseCd:0,spinCd:0,hitCd:0,nextBulb:3500,nextSummon:6000,clock:0,shake:0,running:false,points:0};
+    particles:[],texts:[],hazards:[],poseCd:0,spinCd:0,spinDur:1,hitCd:0,nextBulb:3500,nextSummon:6000,clock:0,shake:0,running:false,points:0};
   show('game');requestAnimationFrame(()=>{resize();render();});updateHud();
-  overlay(`<p class="num">ステージ ${i+1} / 10</p><h2>${st.name}</h2><p>${st.tip}</p><button class="btn big" data-act="go">スタート</button>`);
+  overlay(`<p class="num">ステージ ${i+1} / ${STAGES.length}</p><h2>${st.name}</h2><p>${st.tip}</p><button class="btn big" data-act="go">スタート</button>`);
 }
 function overlay(html){const o=$('#overlay');if(html){o.innerHTML=`<div class="card">${html}</div>`;o.classList.add('on');const b=o.querySelector('button');if(b)b.focus();}else o.classList.remove('on');}
 
@@ -321,7 +344,7 @@ function onArrive(){
 }
 function hitAt(x,y,main){
   const p=G.p,e=enemyAt(x,y);
-  if(e){G.enemies.splice(G.enemies.indexOf(e),1);burst(x,y,e.type==='box'?'#B9824A':'#7A68A0',14);sfx('pop');G.points+=10;say('やっつけた！+10',x,y);return;}
+  if(e){G.enemies.splice(G.enemies.indexOf(e),1);burst(x,y,e.type==='box'?'#B9824A':e.type==='kage'?'#2B2410':'#7A68A0',14);sfx('pop');G.points+=10;say('やっつけた！+10',x,y);return;}
   if(bossAt(x,y)){hurtBoss();return;}
   const v=tile(x,y),edge=x<=0||y<=0||x>=G.w-1||y>=G.h-1;
   if(v===CW||v===CR||v===BA){G.t[y][x]=F;
@@ -331,10 +354,24 @@ function hitAt(x,y,main){
   if(v===ST&&main){say('カキーン！',x,y,'#5E6168');sfx('clang');return;}
   if(v===HO){if(p.keys>=3){burst(x,y,'#FFF7C2',20);stageClear();}else if(main)say('カギを3つ集めてから！',x,y);}
 }
-function hammer(){if(!G||!G.running)return;const p=G.p;if(G.clock<G.hitCd)return;G.hitCd=G.clock+220;p.swing=G.clock;hitAt(p.x+p.dx,p.y+p.dy,true);}
+const isLong=()=>S.weapon==='long';
+function hammer(){if(!G||!G.running)return;const p=G.p;if(G.clock<G.hitCd)return;p.swing=G.clock;
+  if(!isLong()){G.hitCd=G.clock+220;hitAt(p.x+p.dx,p.y+p.dy,true);return;}
+  // ロングハンマー：前方3マスをつらぬく。鉄のカベとドアで止まる
+  G.hitCd=G.clock+450;
+  for(let k=1;k<=3;k++){const x=p.x+p.dx*k,y=p.y+p.dy*k,v=tile(x,y);
+    if(v===DO)break;
+    if(v===ST&&!enemyAt(x,y)&&!bossAt(x,y)){hitAt(x,y,true);break;}
+    hitAt(x,y,k===1);}}
 function spin(){if(!G||!G.running)return;const p=G.p;if(G.clock<G.spinCd)return;
-  G.spinCd=G.clock+(G.clock<p.banana?1200:2500);p.spin=G.clock;say('ぐるぐるハンマー！',p.x,p.y-1,'#2D6BFF');
-  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(dx||dy)hitAt(p.x+dx,p.y+dy,false);}
+  const r=isLong()?2:1;G.spinDur=(G.clock<p.banana?1200:2500)*(r===2?1.5:1);
+  G.spinCd=G.clock+G.spinDur;p.spin=G.clock;say(r===2?'ロングぐるぐる！':'ぐるぐるハンマー！',p.x,p.y-1,'#2D6BFF');
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(dx||dy)hitAt(p.x+dx,p.y+dy,false);}
+function setWeapon(w){S.weapon=w;save();
+  const long=w==='long',b=$('#btn-weapon');b.innerHTML=`<small>ぶき</small>${long?'ロング':'ふつう'}`;
+  b.setAttribute('aria-label',`ぶきを切りかえ（いま：${long?'ロングハンマー':'ハンマー'}）`);
+  $('#hammer-label').innerHTML=long?'ロング<br>ハンマー':'ハンマー';
+  if(G&&G.running)say(long?'ロングハンマー！':'ふつうのハンマー',G.p.x,G.p.y-1,'#2D6BFF');}
 function pose(){if(!G||!G.running)return;const p=G.p;if(G.clock<G.poseCd)return;
   G.poseCd=G.clock+5000;p.pose=G.clock;sfx('pose');say('ムキッ！',p.x,p.y-1,'#FF4F8B');
   for(const e of G.enemies)if(Math.abs(e.x-p.x)+Math.abs(e.y-p.y)<=3)e.stun=G.clock+2600;
@@ -356,8 +393,9 @@ function damage(){
 }
 function stageClear(){
   if(!G.running)return;G.running=false;held=null;sfx('win');
-  G.points+=50;S.points+=G.points;S.unlocked=Math.max(S.unlocked,Math.min(10,G.i+2));save();
-  const pts=G.points,last=G.i===9;
+  G.points+=50;S.points+=G.points;S.unlocked=Math.max(S.unlocked,Math.min(STAGES.length,G.i+2));
+  if(!S.cleared.includes(G.i))S.cleared.push(G.i);save();
+  const pts=G.points,last=G.i===LAST;
   setTimeout(()=>{
     if(last){overlay(null);$('#end-pts').textContent=S.points;show('ending');return;}
     overlay(`<p class="num">ステージ ${G.i+1} クリア！</p><h2>脱出成功！</h2><p>筋肉ポイント +${pts}</p><button class="btn big" data-act="next">つぎのステージへ</button><button class="btn" data-act="title">タイトルへ</button>`);
@@ -378,9 +416,10 @@ function update(dt){
   G.clock+=dt;const c=G.clock,p=G.p;
   if(p.mov&&c-p.mov.t0>=p.mov.dur){p.mov=null;onArrive();if(!G.running)return;}
   if(!p.mov&&held&&c>=p.nextMove)tryMove(held[0],held[1]);
-  const spd=1-G.i*.03;
+  const spd=Math.max(.64,1-G.i*.03);
   for(const e of G.enemies){
-    if(c>=e.next){e.next=c+(e.type==='box'?1050:850)*spd;if(c>=e.stun)stepEnemy(e,v=>v===F||v===WA,.6);}
+    if(c>=e.next){e.next=c+(e.type==='box'?1050:e.type==='kage'?950:850)*spd;
+      if(c>=e.stun)stepEnemy(e,e.type==='kage'?(v=>v===F||v===WA||v===CW):(v=>v===F||v===WA),.6);}
     if(e.x===p.x&&e.y===p.y&&c>=e.stun)damage();
   }
   const B=G.boss;
@@ -466,7 +505,7 @@ function drawHero(g,X,Y,s,dx,dy,o){
   if(o.float){g.lineWidth=5;g.strokeStyle='#FF4F8B';g.beginPath();g.ellipse(0,6,14,6,0,0,7);g.stroke();}
   const flex=o.flex,swing=o.swing;
   const drawHammer=()=>{g.save();g.translate(dx*3,2);let ang=Math.atan2(dy,dx);if(o.spinK!=null)ang+=o.spinK*Math.PI*2;g.rotate(ang);
-    const L=swing?20:13;g.strokeStyle='#7A4E2D';g.lineWidth=3.2;g.lineCap='round';g.beginPath();g.moveTo(3,0);g.lineTo(L,0);g.stroke();
+    const L=o.long?(swing?92:24):(swing?20:13);g.strokeStyle='#7A4E2D';g.lineWidth=3.2;g.lineCap='round';g.beginPath();g.moveTo(3,0);g.lineTo(L,0);g.stroke();
     g.fillStyle='#5E6168';rr(g,L-2,-7,9,14,2);g.fill();g.fillStyle='#A5A8AD';g.fillRect(L-1,-6,2.5,12);g.restore();};
   const behind=dy<0&&o.spinK==null;
   if(!flex&&behind)drawHammer();
@@ -496,8 +535,13 @@ function drawEnemy(e,X,Y){
     g.fillStyle='#6A5890';g.beginPath();g.arc(0,-1+w,11,Math.PI,0);g.lineTo(11,10);
     for(let i=0;i<4;i++){g.quadraticCurveTo(11-i*5.5-2.75,14+(i%2?-2:2),11-(i+1)*5.5,10);}g.closePath();g.fill();
     eyes(g,stun,-4,-2+w);g.fillStyle='rgba(255,79,139,.5)';g.beginPath();g.arc(-7,4+w,2,0,7);g.arc(7,4+w,2,0,7);g.fill();}
-  else{g.fillStyle='#B9824A';rr(g,-11,-9,22,20,2);g.fill();g.fillStyle='#D9A76A';g.fillRect(-3,-9,6,20);
+  else if(e.type==='box'){g.fillStyle='#B9824A';rr(g,-11,-9,22,20,2);g.fill();g.fillStyle='#D9A76A';g.fillRect(-3,-9,6,20);
     g.fillStyle='#3A2F1A';g.fillRect(-11,-3,22,6);eyes(g,stun,-4,0,.7);}
+  if(e.type==='kage'){const inWall=tile(e.x,e.y)===CW,w=Math.sin(c/150+e.y)*1.5;
+    g.globalAlpha=inWall?.55:.92;g.fillStyle='#2B2410';g.beginPath();g.arc(0,-2+w,10,Math.PI,0);g.lineTo(10,11);
+    for(let i=0;i<5;i++)g.lineTo(10-(i+.5)*4,i%2?11:15);g.lineTo(-10,11);g.closePath();g.fill();
+    g.globalAlpha=1;if(stun)eyes(g,true,-4,-2+w);
+    else{g.fillStyle='#FFD23F';g.beginPath();g.ellipse(-4,-2+w,2.6,1.6,0,0,7);g.ellipse(4,-2+w,2.6,1.6,0,0,7);g.fill();}}
   g.restore();
 }
 function eyes(g,stun,x,y,sc){sc=sc||1;
@@ -508,10 +552,17 @@ function drawBoss(B,X,Y){
   const g=cx,s=T/34*1.55,c=G.clock;g.save();g.translate(X,Y-T*.15);g.scale(s,s);
   if(c<B.hurt&&Math.floor(c/60)%2)g.globalAlpha=.45;
   g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(0,14,13,3.5,0,0,7);g.fill();
-  const body=B.kind===1?'#E3CF73':'#7A5BA8',dark=B.kind===1?'#B9A24B':'#553D7C',w=Math.sin(c/220)*1.2;
+  const PAL={1:['#E3CF73','#B9A24B'],2:['#7A5BA8','#553D7C'],3:['#A5A8AD','#5E6168'],4:['#D8434E','#8E1F2A']};
+  const body=PAL[B.kind][0],dark=PAL[B.kind][1],w=Math.sin(c/220)*1.2;
+  if(B.kind===3){g.strokeStyle='#5E6168';g.lineWidth=1.6;g.beginPath();g.moveTo(0,-17+w);g.lineTo(0,-24+w);g.stroke();
+    g.fillStyle=Math.floor(c/300)%2?'#FF4F8B':'#FFD23F';g.beginPath();g.arc(0,-25+w,2.4,0,7);g.fill();}
   g.fillStyle=body;g.beginPath();g.moveTo(-13,12);g.lineTo(-13,-6+w);g.quadraticCurveTo(-13,-17,0,-17+w);g.quadraticCurveTo(13,-17,13,-6+w);g.lineTo(13,12);
   for(let i=0;i<4;i++)g.quadraticCurveTo(13-i*6.5-3.25,16,13-(i+1)*6.5,12);g.closePath();g.fill();
-  g.fillStyle=dark;if(B.kind===1){for(let i=0;i<4;i++)g.fillRect(-10+i*6,-12,2,22);}else{g.fillRect(-13,4,26,3);}
+  g.fillStyle=dark;if(B.kind===1){for(let i=0;i<4;i++)g.fillRect(-10+i*6,-12,2,22);}
+  else if(B.kind===3){for(const [a,b] of [[-9,-12],[9,-12],[-9,8],[9,8]]){g.beginPath();g.arc(a,b+w,1.5,0,7);g.fill();}g.fillRect(-13,2,26,2);}
+  else{g.fillRect(-13,4,26,3);}
+  if(B.kind===4){g.fillStyle='#FFD23F';g.strokeStyle='#8A6200';g.lineWidth=1;g.beginPath();
+    g.moveTo(-9,-16+w);g.lineTo(-9,-25+w);g.lineTo(-4.5,-20+w);g.lineTo(0,-27+w);g.lineTo(4.5,-20+w);g.lineTo(9,-25+w);g.lineTo(9,-16+w);g.closePath();g.fill();g.stroke();}
   if(B.kind===2){g.fillStyle='#FFF7C2';g.fillRect(-7,-22+w,14,4);g.fillStyle='rgba(255,247,194,.35)';g.beginPath();g.arc(0,-20+w,10,0,7);g.fill();}
   const st=c<B.stun;
   if(st){eyes(g,true,-5,-5+w,1.2);}else{
@@ -537,9 +588,12 @@ function render(){
   if(B&&B.hp>0){const [bx,by]=lerp(B,(c-B.t0)/300);bpos=[bx*T+T/2,by*T+T/2];drawBoss(B,bpos[0],bpos[1]);}
   let px=p.x,py=p.y;if(p.mov){const k=Math.min(1,(c-p.mov.t0)/p.mov.dur);px=p.mov.fx+(p.x-p.mov.fx)*k;py=p.mov.fy+(p.y-p.mov.fy)*k;}
   const PX=px*T+T/2,PY=py*T+T/2,blink=c<p.inv&&Math.floor(c/90)%2;
+  const long=isLong(),swingMs=long?200:140;
+  if(long&&c-p.swing<swingMs){const k=(c-p.swing)/swingMs;g.fillStyle=`rgba(255,255,255,${.55*(1-k)})`;
+    const len=T*3,wd=T*.5;g.fillRect(p.dx?PX+(p.dx>0?T*.5:-T*.5-len):PX-wd/2,p.dy?PY+(p.dy>0?T*.5:-T*.5-len):PY-wd/2,p.dx?len:wd,p.dy?len:wd);}
   if(!blink){const sk=c-p.spin<380?(c-p.spin)/380:null;
     drawHero(g,PX,PY-(p.mov?Math.sin(Math.min(1,(c-p.mov.t0)/p.mov.dur)*Math.PI)*T*.06:0),T,p.dx,p.dy,
-      {flex:c-p.pose<700,swing:c-p.swing<140,spinK:sk,float:tile(p.x,p.y)===PO});}
+      {flex:c-p.pose<700,swing:c-p.swing<swingMs,spinK:sk,float:tile(p.x,p.y)===PO,long});}
   if(c-p.pose<500){const k=(c-p.pose)/500;g.strokeStyle=`rgba(255,79,139,${1-k})`;g.lineWidth=3;g.beginPath();g.arc(PX,PY,T*(.5+k*3),0,7);g.stroke();}
   for(const q of G.particles){const t=c-q.t0,k=1-t/q.life;g.globalAlpha=Math.max(0,k);g.fillStyle=q.col;
     const x=(q.x+q.vx*t)*T,y=(q.y+q.vy*t+.0000025*t*t)*T;g.fillRect(x,y,q.sz*T,q.sz*T);}
@@ -575,7 +629,7 @@ addEventListener('keydown',e=>{
   const k=e.key.length===1?e.key.toLowerCase():e.key;
   if(KEYMAP[k]){e.preventDefault();if(!keysDown.includes(k))keysDown.push(k);held=KEYMAP[k];return;}
   if(e.repeat)return;
-  if(k===' '){e.preventDefault();hammer();}else if(k==='x'||k==='Shift')spin();else if(k==='z'||k==='c')pose();
+  if(k===' '){e.preventDefault();hammer();}else if(k==='x'||k==='Shift')spin();else if(k==='z'||k==='c')pose();else if(k==='q')setWeapon(isLong()?'hammer':'long');
 });
 addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;const i=keysDown.indexOf(k);
   if(i>=0){keysDown.splice(i,1);held=keysDown.length?KEYMAP[keysDown[keysDown.length-1]]:null;}});
@@ -604,13 +658,16 @@ $('#overlay').addEventListener('click',e=>{const a=e.target.closest('[data-act]'
   else if(act==='title')goTitle();});
 $('#btn-quit').addEventListener('click',goTitle);
 $('#btn-sound').addEventListener('click',()=>{soundOn=!soundOn;const b=$('#btn-sound');b.textContent=soundOn?'音あり':'音なし';b.setAttribute('aria-pressed',soundOn);});
-$('#btn-play').addEventListener('click',()=>{sfx('item');startStage(Math.min(S.unlocked,10)-1);});
+$('#btn-weapon').addEventListener('click',()=>setWeapon(isLong()?'hammer':'long'));
+$('#btn-play').addEventListener('click',()=>{sfx('item');let i=STAGES.findIndex((_,k)=>!S.cleared.includes(k));startStage(i<0?0:i);});
 $('#btn-end').addEventListener('click',goTitle);
 function goTitle(){if(G)G.running=false;held=null;overlay(null);buildTitle();show('title');}
 function buildTitle(){
   const grid=$('#stage-grid');grid.innerHTML='';
-  STAGES.forEach((st,i)=>{const b=document.createElement('button');b.innerHTML=`${i+1}${st.boss?'<small>ボス</small>':''}`;
-    b.setAttribute('aria-label',`ステージ${i+1} ${st.name}`);b.title=st.name;b.disabled=i+1>S.unlocked;
+  STAGES.forEach((st,i)=>{const b=document.createElement('button'),done=S.cleared.includes(i);
+    b.innerHTML=`${i+1}${st.boss?'<small>ボス</small>':''}${done?'<small class="ok">クリア</small>':''}`;
+    if(done)b.classList.add('done');
+    b.setAttribute('aria-label',`ステージ${i+1} ${st.name}${done?'（クリア済み）':''}`);b.title=st.name;
     b.addEventListener('click',()=>{sfx('item');startStage(i);});grid.appendChild(b);});
   $('#title-pts').textContent=S.points;
 }
@@ -624,7 +681,7 @@ function loop(ts){
   if($('#game').classList.contains('on')&&G){
     if(G.running)update(dt);render();
     const hc=$('#btn-hammer .cd'),pc=$('#btn-pose .cd');
-    const sp=G.clock<G.spinCd?(G.spinCd-G.clock)/(G.clock<G.p.banana?1200:2500):0;
+    const sp=G.clock<G.spinCd?(G.spinCd-G.clock)/G.spinDur:0;
     hc.style.height=Math.max(0,Math.min(1,sp))*100+'%';
     pc.style.height=Math.max(0,Math.min(1,(G.poseCd-G.clock)/5000))*100+'%';
     if(ts-lastHud>500){lastHud=ts;updateHud();}
@@ -632,7 +689,7 @@ function loop(ts){
   else if($('#ending').classList.contains('on'))drawScene($('#end-cv'),ts);
   requestAnimationFrame(loop);
 }
-buildTitle();requestAnimationFrame(loop);
+buildTitle();setWeapon(S.weapon);requestAnimationFrame(loop);
 })();
 </script>
 </body>
