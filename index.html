@@ -32,7 +32,7 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
 
 /* タイトル */
 #title{overflow-y:auto;padding:16px 20px 24px;align-items:center;text-align:center;gap:14px}
-#hero-cv,#end-cv{width:220px;height:170px;display:block;border:3px solid var(--line);border-radius:14px}
+#hero-cv,#end-cv,#story-cv{width:220px;height:170px;display:block;border:3px solid var(--line);border-radius:14px}
 h1{font-family:"Dela Gothic One","Hiragino Sans",sans-serif;font-weight:400;margin:4px 0 0;line-height:1.05;
   font-size:clamp(30px,9vw,46px);letter-spacing:.01em;text-shadow:3px 3px 0 var(--blue)}
 h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 0 var(--pink);margin-bottom:6px}
@@ -90,7 +90,7 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
 .round .cd{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(0,0,0,.4);pointer-events:none}
 #btn-hammer{width:100px;height:100px;background:var(--blue);font-size:18px}
 #btn-pose{width:74px;height:74px;background:var(--pink);font-size:13px}
-#ending{overflow-y:auto;padding:28px 20px;align-items:center;text-align:center;gap:16px;justify-content:center}
+#ending,#story{overflow-y:auto;padding:28px 20px;align-items:center;text-align:center;gap:16px;justify-content:center}
 @media (max-height:640px){.dpad{grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px)}#btn-hammer{width:84px;height:84px}#btn-pose{width:64px;height:64px}}
 @media (prefers-reduced-motion:reduce){.btn:active,.round.held{transform:none}}
 </style>
@@ -147,10 +147,17 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
     </div>
   </section>
 
+  <section id="story" class="screen">
+    <canvas id="story-cv" width="440" height="340" aria-hidden="true"></canvas>
+    <h1 id="story-h"></h1>
+    <p class="lead" id="story-p"></p>
+    <button class="btn big" id="btn-story"></button>
+  </section>
+
   <section id="ending" class="screen">
     <canvas id="end-cv" width="440" height="340" aria-hidden="true"></canvas>
-    <h1><small>全ステージクリア！</small>元の世界に<br>帰ってきた！</h1>
-    <p class="lead">ジムのみんなが待っていた。筋肉は裏切らない！</p>
+    <h1><small>全20ステージクリア！</small>こんどこそ<br>元の世界だ！</h1>
+    <p class="lead">もう黄色いカベはどこにもない。ジムのみんなが待っていた。筋肉は裏切らない！</p>
     <p class="pts">筋肉ポイント <span id="end-pts">0</span></p>
     <button class="btn big" id="btn-end">タイトルへ</button>
   </section>
@@ -175,7 +182,7 @@ const STAGES=[
  {name:'鉄のカベ迷路',w:11,h:15,steel:.3,carve:60,enemies:{moya:3},items:['protein','banana','banana'],tip:'鉄のカベだらけ。バナナを食べると、鉄もこわせるパワーに！'},
  {name:'おもちゃの部屋',w:11,h:15,steel:.08,carve:90,enemies:{moya:2,box:1},balloons:14,items:['protein','dumbbell'],tip:'カギは風船の中。どんどんわって探そう。'},
  {name:'ボス：バックルームの主',w:11,h:15,steel:.05,boss:{hp:10,speed:620,kind:2,summon:true},flicker:true,bulbs:true,items:['protein','protein','light'],tip:'ハンマーを10回当てて、バックルームの主をたおせ！'},
- {name:'暗やみオフィス',w:11,h:15,steel:.1,carve:80,enemies:{moya:3},flicker:true,items:['light','protein','dumbbell'],tip:'主をたおしても、まだ出口は続いていた…。暗いオフィスを進もう。'},
+ {name:'暗やみオフィス',w:11,h:15,steel:.1,carve:80,enemies:{moya:3},flicker:true,items:['light','protein','dumbbell'],tip:'またバックルームにもどってきてしまった…。こんどは暗いオフィスだ。進もう！'},
  {name:'つるつるスケートリンク',w:11,h:15,steel:.08,carve:90,enemies:{moya:2,box:1},water:.45,items:['protein','dumbbell'],tip:'床のほとんどがつるつる！すべる向きをよく考えよう。'},
  {name:'ダンボール大迷宮',w:13,h:15,steel:.18,carve:90,enemies:{box:4},crates:20,items:['banana','protein','dumbbell'],tip:'ダンボールだらけ。カギ3つがどこかにかくれているぞ。'},
  {name:'かげおばけの部屋',w:11,h:15,steel:.1,carve:80,enemies:{kage:3},items:['protein','dumbbell'],tip:'かげおばけはヒビのカベの中を通ってくる！カベの中にいても、ハンマーでたおせるよ。'},
@@ -398,6 +405,7 @@ function stageClear(){
   const pts=G.points,last=G.i===LAST;
   setTimeout(()=>{
     if(last){overlay(null);$('#end-pts').textContent=S.points;show('ending');return;}
+    if(G.i===9){overlay(null);showStory();return;}
     overlay(`<p class="num">ステージ ${G.i+1} クリア！</p><h2>脱出成功！</h2><p>筋肉ポイント +${pts}</p><button class="btn big" data-act="next">つぎのステージへ</button><button class="btn" data-act="title">タイトルへ</button>`);
   },600);
 }
@@ -621,6 +629,38 @@ function drawScene(canvas,t){
   drawHero(g,W*.55,H*.55+Math.sin(t/400)*3,H*.62,0,1,{flex:Math.floor(t/1400)%2===0,swing:false,spinK:null,float:false});
 }
 
+/* 元の世界（ジム） */
+function drawGym(canvas,t,welcome){
+  const g=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  g.fillStyle='#DCEBFA';g.fillRect(0,0,W,H);
+  g.fillStyle='#fff';g.fillRect(W*.06,H*.1,W*.3,H*.3);g.fillStyle='#9ED3F5';g.fillRect(W*.08,H*.13,W*.26,H*.24);
+  g.fillStyle='#fff';g.fillRect(W*.2,H*.13,4,H*.24);
+  g.fillStyle='#FFD23F';g.beginPath();g.arc(W*.13,H*.2,10,0,7);g.fill();
+  g.fillStyle='#2D6BFF';g.fillRect(W*.7,H*.08,W*.24,34);g.fillStyle='#fff';g.font='800 22px sans-serif';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('GYM',W*.82,H*.08+18);
+  g.fillStyle='#8A94A0';g.fillRect(0,H*.72,W,H*.28);g.fillStyle='#6E7883';g.fillRect(0,H*.7,W,8);
+  g.fillStyle='#5E6168';g.fillRect(W*.72,H*.62,W*.24,6);
+  for(let i=0;i<3;i++){const x=W*.76+i*W*.08;g.fillStyle='#2B2410';g.fillRect(x-10,H*.6-8,4,16);g.fillRect(x+6,H*.6-8,4,16);g.fillStyle='#8A94A0';g.fillRect(x-6,H*.6-2,12,4);}
+  drawHero(g,W*.44,H*.6+Math.sin(t/400)*3,H*.5,0,1,{flex:Math.floor(t/1400)%2===0,swing:false,spinK:null,float:false});
+  if(welcome){g.fillStyle='#fff';g.strokeStyle='#2B2410';g.lineWidth=3;rr(g,W*.68,H*.3,W*.29,40,12);g.fill();g.stroke();
+    g.fillStyle='#FF4F8B';g.font='800 20px sans-serif';g.fillText('おかえり！',W*.825,H*.3+21);}
+}
+let storyStep=0,storyT0=0;
+const STORY=[
+  {h:'<small>ステージ10クリア！</small>元の世界に<br>帰ってきた！',p:'ドアを開けると、そこはいつものジム。みんなが「おかえり！」と出むかえてくれた。',b:'やったー！'},
+  {h:'<small>…と思ったら</small>また<br>バックルーム！？',p:'ジムのドアを開けたら、また黄色いカベの部屋にもどってきてしまった！こんどこそ、ほんとうの出口をさがそう！',b:'ステージ11へ'}
+];
+function setStory(){const s=STORY[storyStep];$('#story-h').innerHTML=s.h;$('#story-p').textContent=s.p;$('#btn-story').textContent=s.b;storyT0=performance.now();}
+function showStory(){storyStep=0;setStory();show('story');}
+function drawStory(ts){
+  const c=$('#story-cv');if(storyStep===0){drawGym(c,ts,true);return;}
+  const k=(ts-storyT0)/700;
+  if(k<1&&Math.floor(ts/90)%2)drawGym(c,ts,false);else drawScene(c,ts);
+  if(k<1){const g=c.getContext('2d');g.fillStyle=`rgba(255,255,255,${.7*(1-k)})`;g.fillRect(0,0,c.width,c.height);}
+}
+$('#btn-story').addEventListener('click',()=>{
+  if(storyStep===0){storyStep=1;setStory();sfx('boss');}else{sfx('item');startStage(10);}});
+
 /* ---------- 入力 ---------- */
 const keysDown=[];
 const KEYMAP={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
@@ -686,7 +726,8 @@ function loop(ts){
     pc.style.height=Math.max(0,Math.min(1,(G.poseCd-G.clock)/5000))*100+'%';
     if(ts-lastHud>500){lastHud=ts;updateHud();}
   }else if($('#title').classList.contains('on'))drawScene($('#hero-cv'),ts);
-  else if($('#ending').classList.contains('on'))drawScene($('#end-cv'),ts);
+  else if($('#ending').classList.contains('on'))drawGym($('#end-cv'),ts,false);
+  else if($('#story').classList.contains('on'))drawStory(ts);
   requestAnimationFrame(loop);
 }
 buildTitle();setWeapon(S.weapon);requestAnimationFrame(loop);
