@@ -101,7 +101,7 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
   <section id="title" class="screen on">
     <canvas id="hero-cv" width="440" height="340" aria-hidden="true"></canvas>
     <h1><small>ムキムキ脱出！</small>バックルーム・<br>ブレイカー</h1>
-    <p class="lead">出口がないなら、作ればいい。ハンマーでカベをこわして、20のステージから脱出しよう。どのステージからでもあそべるよ。</p>
+    <p class="lead">出口がないなら、作ればいい。ハンマーでカベをこわして、30のステージから脱出しよう。どのステージからでもあそべるよ。</p>
     <button class="btn big" id="btn-play">あそぶ</button>
     <div class="stage-grid" id="stage-grid"></div>
     <p class="pts">筋肉ポイント <span id="title-pts">0</span></p>
@@ -113,7 +113,8 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
         <li>ハンマーボタンを長押しすると「ぐるぐるハンマー」でまわりを全部こわす</li>
         <li>ムキムキボタンで、近くの敵をびっくりさせて止める</li>
         <li>上の「ぶき」ボタンでロングハンマーに切りかえ。前の3マスまでとどく！（そのかわり少しおそい）</li>
-        <li>かげおばけはヒビのカベの中を通ってくるので気をつけて</li>
+        <li>かげおばけはヒビのカベの中を通ってくるので気をつけて。赤いはやおばけは足が速い</li>
+        <li>うずまきのワープに乗ると、同じ色のうずへワープする</li>
         <li>パソコンは 矢印キーで移動、スペースでハンマー、Xでぐるぐる、Zでムキムキ、Qでぶき切りかえ</li>
       </ul>
     </details>
@@ -156,8 +157,8 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
 
   <section id="ending" class="screen">
     <canvas id="end-cv" width="440" height="340" aria-hidden="true"></canvas>
-    <h1><small>全20ステージクリア！</small>こんどこそ<br>元の世界だ！</h1>
-    <p class="lead">もう黄色いカベはどこにもない。ジムのみんなが待っていた。筋肉は裏切らない！</p>
+    <h1><small>全30ステージクリア！</small>ほんとうに<br>元の世界だ！</h1>
+    <p class="lead">バックルームの核をこわしたから、もう二度ともどらない。…たぶん！筋肉は裏切らない！</p>
     <p class="pts">筋肉ポイント <span id="end-pts">0</span></p>
     <button class="btn big" id="btn-end">タイトルへ</button>
   </section>
@@ -167,7 +168,8 @@ h1 small{display:block;font-size:.55em;letter-spacing:.06em;text-shadow:2px 2px 
 (function(){
 "use strict";
 const $=s=>document.querySelector(s);
-const F=0,CW=1,ST=2,WA=3,PO=4,CR=5,BA=6,DO=7,HO=8;
+const F=0,CW=1,ST=2,WA=3,PO=4,CR=5,BA=6,DO=7,HO=8,WP=9;
+const floorish=v=>v===F||v===WA||v===WP;
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1]];
 const rand=n=>Math.floor(Math.random()*n);
 
@@ -191,7 +193,17 @@ const STAGES=[
  {name:'電球の嵐',w:11,h:15,steel:.15,carve:80,enemies:{moya:2,kage:1},bulbs:true,hole:true,items:['protein','banana'],tip:'電球がどんどん落ちてくる！カギを3つ集めたら、光る床をこわして下へ。'},
  {name:'風船パーティ',w:13,h:15,steel:.1,carve:100,enemies:{box:2,kage:1},balloons:20,flicker:true,items:['protein','light','dumbbell'],tip:'暗い中で風船パーティ。風船をわってカギを探そう。'},
  {name:'さいごの大迷路',w:13,h:17,steel:.32,carve:100,enemies:{moya:3,kage:2},water:.1,items:['protein','banana','banana','banana'],tip:'鉄のカベの大迷路。バナナパワーで道を作れ！'},
- {name:'ボス：バックルームの王',w:13,h:17,steel:.06,boss:{hp:14,speed:520,kind:4,summon:true},flicker:true,bulbs:true,items:['protein','protein','protein','light'],tip:'ほんとうのさいごのボス！ハンマーを14回当てて、元の世界に帰ろう！'}
+ {name:'ボス：バックルームの王',w:13,h:17,steel:.06,boss:{hp:14,speed:520,kind:4,summon:true},flicker:true,bulbs:true,items:['protein','protein','protein','light'],tip:'バックルームの王があらわれた！ハンマーを14回当てて、元の世界に帰ろう！'},
+ {name:'ジムの地下室',w:11,h:15,steel:.1,carve:80,enemies:{hayai:2,moya:1},items:['protein','dumbbell'],tip:'ここはバックルームのいちばん下。赤い「はやおばけ」は足が速いぞ！'},
+ {name:'ワープの部屋',w:11,h:15,steel:.12,carve:80,enemies:{moya:2},warps:3,items:['protein','dumbbell'],tip:'むらさきのうずに乗ると、同じ色のうずへワープ！うまく使って近道しよう。'},
+ {name:'はやおばけの廊下',w:11,h:17,steel:.1,carve:90,enemies:{hayai:3},flicker:true,items:['light','protein','protein'],tip:'暗い廊下にはやおばけが3体。ムキムキポーズで止めてからたおそう。'},
+ {name:'氷のプール',w:13,h:17,steel:.08,carve:100,enemies:{hayai:1,moya:2},pool:true,water:.35,items:['protein','dumbbell'],tip:'つるつるの床とプール。浮き輪を見つけて向こう岸へ！'},
+ {name:'ボス：ダンボール大王',w:13,h:15,steel:.05,boss:{hp:12,speed:540,kind:5,summon:'box'},items:['protein','protein'],tip:'ダンボールの手下をどんどん呼んでくる！ハンマーを12回当てろ。'},
+ {name:'ワープ迷路',w:13,h:15,steel:.28,carve:90,enemies:{kage:2},warps:4,items:['protein','banana','banana'],tip:'鉄のカベとワープの迷路。バナナとワープで道を切り開け！'},
+ {name:'おばけ大集合',w:13,h:17,steel:.1,carve:110,enemies:{moya:3,kage:2,hayai:2},items:['protein','protein','dumbbell'],tip:'おばけがいっぱい！ロングハンマーやぐるぐるハンマーでまとめてたおそう。'},
+ {name:'真っ暗な倉庫',w:13,h:15,steel:.12,carve:100,enemies:{box:3,hayai:1},crates:20,flicker:true,items:['light','protein','dumbbell'],tip:'暗い倉庫のダンボールのどこかにカギがある。懐中電灯がたよりだ。'},
+ {name:'ワープと電球',w:13,h:17,steel:.15,carve:100,enemies:{kage:2,hayai:1},warps:3,bulbs:true,hole:true,items:['protein','protein','banana'],tip:'電球をよけながらワープ！カギを3つ集めたら、光る床をこわして下へ。'},
+ {name:'ボス：バックルームの核',w:13,h:17,steel:.06,boss:{hp:18,speed:480,kind:6,summon:'hayai'},flicker:true,bulbs:true,items:['protein','protein','protein','light','banana'],tip:'バックルームを生み出していた「核」だ！18回当てて、ほんとうに元の世界へ帰ろう！'}
 ];
 const LAST=STAGES.length-1;
 
@@ -279,8 +291,11 @@ function gen(st){
     for(const k in (st.enemies||{}))for(let i=0;i<st.enemies[k];i++){
       const c=take(c=>c.d>=6,false);if(!c)continue;t[c.y][c.x]=F;
       enemies.push({type:k,x:c.x,y:c.y,fx:c.x,fy:c.y,t0:-9999,next:1500+rand(800),stun:0});}
+    const warps=[];
+    for(let i=0;i<(st.warps||0);i++){const a=take(null,false),b=a&&take(c=>Math.abs(c.x-a.x)+Math.abs(c.y-a.y)>=6,false);
+      if(!a||!b)break;t[a.y][a.x]=WP;t[b.y][b.x]=WP;warps.push([a,b]);}
     if(st.water)for(const c of reach)if(t[c.y][c.x]===F&&!used.has(c.x+','+c.y)&&Math.random()<st.water)t[c.y][c.x]=WA;
-    return {t,items,hidden,start:{x:sx,y:sy},band,enemies,boss,bossExit};
+    return {t,items,hidden,start:{x:sx,y:sy},band,enemies,boss,bossExit,warps};
   }
 }
 
@@ -297,7 +312,7 @@ function resize(){
 }
 function startStage(i){
   const st=STAGES[i],m=gen(st);
-  G={i,st,w:st.w,h:st.h,t:m.t,items:m.items,hidden:m.hidden,band:m.band,enemies:m.enemies,boss:m.boss,bossExit:m.bossExit,
+  G={i,st,w:st.w,h:st.h,t:m.t,warps:m.warps,items:m.items,hidden:m.hidden,band:m.band,enemies:m.enemies,boss:m.boss,bossExit:m.bossExit,
     p:{x:m.start.x,y:m.start.y,mov:null,dx:0,dy:-1,hearts:3,inv:0,keys:0,float:false,light:false,banana:0,pose:-9999,swing:-9999,spin:-9999,nextMove:0},
     particles:[],texts:[],hazards:[],poseCd:0,spinCd:0,spinDur:1,hitCd:0,nextBulb:3500,nextSummon:6000,clock:0,shake:0,running:false,points:0};
   show('game');requestAnimationFrame(()=>{resize();render();});updateHud();
@@ -320,7 +335,10 @@ function updateHud(){
 const tile=(x,y)=>(x<0||y<0||x>=G.w||y>=G.h)?ST:G.t[y][x];
 const enemyAt=(x,y)=>G.enemies.find(e=>e.x===x&&e.y===y);
 const bossAt=(x,y)=>G.boss&&G.boss.hp>0&&G.boss.x===x&&G.boss.y===y;
-function canWalk(v){const p=G.p;return v===F||v===WA||(v===PO&&p.float)||(v===DO&&p.keys>=3);}
+const WCOL=['#9B5DE5','#FF4F8B','#2D6BFF','#1FA463'];
+function warpAt(x,y){for(let i=0;i<G.warps.length;i++){const [a,b]=G.warps[i];
+  if(a.x===x&&a.y===y)return {i,other:b};if(b.x===x&&b.y===y)return {i,other:a};}return null;}
+function canWalk(v){const p=G.p;return floorish(v)||(v===PO&&p.float)||(v===DO&&p.keys>=3);}
 function say(text,x,y,color){G.texts.push({text,x:x+.5,y:y+.2,t0:G.clock,color:color||'#2B2410'});}
 function burst(x,y,col,n){for(let i=0;i<(n||10);i++){const a=Math.random()*6.28,s=.002+Math.random()*.004;
   G.particles.push({x:x+.5,y:y+.5,vx:Math.cos(a)*s,vy:Math.sin(a)*s-.002,life:500+rand(300),t0:G.clock,col,sz:.08+Math.random()*.1});}}
@@ -346,12 +364,14 @@ function onArrive(){
     updateHud();}
   const v=tile(p.x,p.y);
   if(v===DO&&p.keys>=3){stageClear();return;}
+  if(v===WP){const w=warpAt(p.x,p.y);if(w){const o=w.other;burst(p.x,p.y,WCOL[w.i],12);p.x=o.x;p.y=o.y;
+    burst(o.x,o.y,WCOL[w.i],12);sfx('pose');say('ワープ！',o.x,o.y,'#7A3FC4');}return;}
   if(v===WA){const nv=tile(p.x+p.dx,p.y+p.dy);
     if((nv===F||nv===WA)&&!bossAt(p.x+p.dx,p.y+p.dy))startMove(p.dx,p.dy,90);}
 }
 function hitAt(x,y,main){
   const p=G.p,e=enemyAt(x,y);
-  if(e){G.enemies.splice(G.enemies.indexOf(e),1);burst(x,y,e.type==='box'?'#B9824A':e.type==='kage'?'#2B2410':'#7A68A0',14);sfx('pop');G.points+=10;say('やっつけた！+10',x,y);return;}
+  if(e){G.enemies.splice(G.enemies.indexOf(e),1);burst(x,y,e.type==='box'?'#B9824A':e.type==='kage'?'#2B2410':e.type==='hayai'?'#D8434E':'#7A68A0',14);sfx('pop');G.points+=10;say('やっつけた！+10',x,y);return;}
   if(bossAt(x,y)){hurtBoss();return;}
   const v=tile(x,y),edge=x<=0||y<=0||x>=G.w-1||y>=G.h-1;
   if(v===CW||v===CR||v===BA){G.t[y][x]=F;
@@ -405,7 +425,7 @@ function stageClear(){
   const pts=G.points,last=G.i===LAST;
   setTimeout(()=>{
     if(last){overlay(null);$('#end-pts').textContent=S.points;show('ending');return;}
-    if(G.i===9){overlay(null);showStory();return;}
+    if(STORY[G.i]){overlay(null);showStory(G.i);return;}
     overlay(`<p class="num">ステージ ${G.i+1} クリア！</p><h2>脱出成功！</h2><p>筋肉ポイント +${pts}</p><button class="btn big" data-act="next">つぎのステージへ</button><button class="btn" data-act="title">タイトルへ</button>`);
   },600);
 }
@@ -426,8 +446,8 @@ function update(dt){
   if(!p.mov&&held&&c>=p.nextMove)tryMove(held[0],held[1]);
   const spd=Math.max(.64,1-G.i*.03);
   for(const e of G.enemies){
-    if(c>=e.next){e.next=c+(e.type==='box'?1050:e.type==='kage'?950:850)*spd;
-      if(c>=e.stun)stepEnemy(e,e.type==='kage'?(v=>v===F||v===WA||v===CW):(v=>v===F||v===WA),.6);}
+    if(c>=e.next){e.next=c+(e.type==='box'?1050:e.type==='kage'?950:e.type==='hayai'?560:850)*spd;
+      if(c>=e.stun)stepEnemy(e,e.type==='kage'?(v=>floorish(v)||v===CW):floorish,.6);}
     if(e.x===p.x&&e.y===p.y&&c>=e.stun)damage();
   }
   const B=G.boss;
@@ -436,7 +456,7 @@ function update(dt){
     if(B.x===p.x&&B.y===p.y&&c>=B.stun)damage();
     if(G.st.boss.summon&&c>=G.nextSummon){G.nextSummon=c+7000;
       if(G.enemies.length<3)for(const [dx,dy] of DIRS){const x=B.x+dx,y=B.y+dy;
-        if(tile(x,y)===F&&!enemyAt(x,y)&&!(x===p.x&&y===p.y)){G.enemies.push({type:'moya',x,y,fx:x,fy:y,t0:-9999,next:c+1200,stun:0});burst(x,y,'#7A68A0',8);break;}}}
+        if(tile(x,y)===F&&!enemyAt(x,y)&&!(x===p.x&&y===p.y)){G.enemies.push({type:typeof G.st.boss.summon==='string'?G.st.boss.summon:'moya',x,y,fx:x,fy:y,t0:-9999,next:c+1200,stun:0});burst(x,y,'#7A68A0',8);break;}}}
   }
   if(G.st.bulbs&&c>=G.nextBulb&&!(B&&B.hp<=0)){G.nextBulb=c+2400+rand(1200);G.hazards.push({x:p.x,y:p.y,t0:c});}
   for(let i=G.hazards.length-1;i>=0;i--){const h=G.hazards[i];
@@ -482,6 +502,11 @@ function drawTile(x,y,v){
     g.strokeStyle='#6B5D2A';g.lineWidth=1*s;g.beginPath();g.moveTo(X+16*s,Y+22*s+bob);g.lineTo(X+15*s,Y+31*s);g.stroke();
     g.fillStyle=col;g.beginPath();g.ellipse(X+16*s,Y+13*s+bob,9*s,10.5*s,0,0,7);g.fill();
     g.fillStyle='rgba(255,255,255,.5)';g.beginPath();g.ellipse(X+12.5*s,Y+9*s+bob,2.2*s,3.2*s,-.4,0,7);g.fill();
+  }else if(v===WP){
+    const w=warpAt(x,y),col=WCOL[w?w.i%4:0],r=G.clock/300;
+    g.fillStyle=col;g.globalAlpha=.35;g.beginPath();g.arc(X+16*s,Y+16*s,13*s,0,7);g.fill();g.globalAlpha=1;
+    g.strokeStyle=col;g.lineWidth=2.4*s;g.lineCap='round';
+    for(let k=0;k<3;k++){g.beginPath();g.arc(X+16*s,Y+16*s,(4+k*3.5)*s,r+k*2,r+k*2+3.6);g.stroke();}
   }else if(v===HO){
     const k=G.p.keys>=3?(Math.sin(G.clock/150)+1)/2:0;
     g.fillStyle=`rgba(255,247,194,${.25+k*.5})`;g.beginPath();g.ellipse(X+16*s,Y+16*s,12*s,8*s,0,0,7);g.fill();
@@ -539,8 +564,9 @@ function drawHero(g,X,Y,s,dx,dy,o){
 function drawEnemy(e,X,Y){
   const g=cx,s=T/34,c=G.clock,stun=c<e.stun;g.save();g.translate(X,Y);g.scale(s,s);
   g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(0,13,10,3,0,0,7);g.fill();
-  if(e.type==='moya'){const w=Math.sin(c/180+e.x)*1.5;
-    g.fillStyle='#6A5890';g.beginPath();g.arc(0,-1+w,11,Math.PI,0);g.lineTo(11,10);
+  if(e.type==='moya'||e.type==='hayai'){const hy=e.type==='hayai',w=Math.sin(c/(hy?90:180)+e.x)*1.5;
+    if(hy){g.strokeStyle='rgba(216,67,78,.5)';g.lineWidth=2;for(const yy of [-4,2,8]){g.beginPath();g.moveTo(-18,yy+w);g.lineTo(-12,yy+w);g.stroke();}}
+    g.fillStyle=hy?'#D8434E':'#6A5890';g.beginPath();g.arc(0,-1+w,11,Math.PI,0);g.lineTo(11,10);
     for(let i=0;i<4;i++){g.quadraticCurveTo(11-i*5.5-2.75,14+(i%2?-2:2),11-(i+1)*5.5,10);}g.closePath();g.fill();
     eyes(g,stun,-4,-2+w);g.fillStyle='rgba(255,79,139,.5)';g.beginPath();g.arc(-7,4+w,2,0,7);g.arc(7,4+w,2,0,7);g.fill();}
   else if(e.type==='box'){g.fillStyle='#B9824A';rr(g,-11,-9,22,20,2);g.fill();g.fillStyle='#D9A76A';g.fillRect(-3,-9,6,20);
@@ -560,7 +586,7 @@ function drawBoss(B,X,Y){
   const g=cx,s=T/34*1.55,c=G.clock;g.save();g.translate(X,Y-T*.15);g.scale(s,s);
   if(c<B.hurt&&Math.floor(c/60)%2)g.globalAlpha=.45;
   g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(0,14,13,3.5,0,0,7);g.fill();
-  const PAL={1:['#E3CF73','#B9A24B'],2:['#7A5BA8','#553D7C'],3:['#A5A8AD','#5E6168'],4:['#D8434E','#8E1F2A']};
+  const PAL={1:['#E3CF73','#B9A24B'],2:['#7A5BA8','#553D7C'],3:['#A5A8AD','#5E6168'],4:['#D8434E','#8E1F2A'],5:['#C99256','#7A4E2D'],6:['#2B2410','#FFD23F']};
   const body=PAL[B.kind][0],dark=PAL[B.kind][1],w=Math.sin(c/220)*1.2;
   if(B.kind===3){g.strokeStyle='#5E6168';g.lineWidth=1.6;g.beginPath();g.moveTo(0,-17+w);g.lineTo(0,-24+w);g.stroke();
     g.fillStyle=Math.floor(c/300)%2?'#FF4F8B':'#FFD23F';g.beginPath();g.arc(0,-25+w,2.4,0,7);g.fill();}
@@ -569,6 +595,9 @@ function drawBoss(B,X,Y){
   g.fillStyle=dark;if(B.kind===1){for(let i=0;i<4;i++)g.fillRect(-10+i*6,-12,2,22);}
   else if(B.kind===3){for(const [a,b] of [[-9,-12],[9,-12],[-9,8],[9,8]]){g.beginPath();g.arc(a,b+w,1.5,0,7);g.fill();}g.fillRect(-13,2,26,2);}
   else{g.fillRect(-13,4,26,3);}
+  if(B.kind===5){g.fillStyle='#E8C08A';g.fillRect(-3,-17+w,6,29);g.fillStyle='#FFD23F';g.beginPath();
+    g.moveTo(-8,-16+w);g.lineTo(-8,-23+w);g.lineTo(-3,-19+w);g.lineTo(0,-25+w);g.lineTo(3,-19+w);g.lineTo(8,-23+w);g.lineTo(8,-16+w);g.closePath();g.fill();}
+  if(B.kind===6){g.strokeStyle=`rgba(255,210,63,${.4+.3*Math.sin(c/200)})`;g.lineWidth=2;g.beginPath();g.arc(0,-2+w,19,0,7);g.stroke();}
   if(B.kind===4){g.fillStyle='#FFD23F';g.strokeStyle='#8A6200';g.lineWidth=1;g.beginPath();
     g.moveTo(-9,-16+w);g.lineTo(-9,-25+w);g.lineTo(-4.5,-20+w);g.lineTo(0,-27+w);g.lineTo(4.5,-20+w);g.lineTo(9,-25+w);g.lineTo(9,-16+w);g.closePath();g.fill();g.stroke();}
   if(B.kind===2){g.fillStyle='#FFF7C2';g.fillRect(-7,-22+w,14,4);g.fillStyle='rgba(255,247,194,.35)';g.beginPath();g.arc(0,-20+w,10,0,7);g.fill();}
@@ -645,13 +674,16 @@ function drawGym(canvas,t,welcome){
   if(welcome){g.fillStyle='#fff';g.strokeStyle='#2B2410';g.lineWidth=3;rr(g,W*.68,H*.3,W*.29,40,12);g.fill();g.stroke();
     g.fillStyle='#FF4F8B';g.font='800 20px sans-serif';g.fillText('おかえり！',W*.825,H*.3+21);}
 }
-let storyStep=0,storyT0=0;
-const STORY=[
+let storyStep=0,storyT0=0,storyStage=9;
+const STORY={9:[
   {h:'<small>ステージ10クリア！</small>元の世界に<br>帰ってきた！',p:'ドアを開けると、そこはいつものジム。みんなが「おかえり！」と出むかえてくれた。',b:'やったー！'},
   {h:'<small>…と思ったら</small>また<br>バックルーム！？',p:'ジムのドアを開けたら、また黄色いカベの部屋にもどってきてしまった！こんどこそ、ほんとうの出口をさがそう！',b:'ステージ11へ'}
-];
-function setStory(){const s=STORY[storyStep];$('#story-h').innerHTML=s.h;$('#story-p').textContent=s.p;$('#btn-story').textContent=s.b;storyT0=performance.now();}
-function showStory(){storyStep=0;setStory();show('story');}
+],19:[
+  {h:'<small>ステージ20クリア！</small>こんどこそ<br>元の世界だ！',p:'ジムのみんなとハイタッチ！もう黄色いカベはこりごりだ。',b:'やったー！'},
+  {h:'<small>…ところが</small>ゆかが<br>ぬけた！？',p:'ムキムキすぎて、ジムのゆかにヒビが！バックルームのいちばん下まで落ちてしまった。さいごの10ステージだ！',b:'ステージ21へ'}
+]};
+function setStory(){const s=STORY[storyStage][storyStep];$('#story-h').innerHTML=s.h;$('#story-p').textContent=s.p;$('#btn-story').textContent=s.b;storyT0=performance.now();}
+function showStory(i){storyStage=i;storyStep=0;setStory();show('story');}
 function drawStory(ts){
   const c=$('#story-cv');if(storyStep===0){drawGym(c,ts,true);return;}
   const k=(ts-storyT0)/700;
@@ -659,7 +691,7 @@ function drawStory(ts){
   if(k<1){const g=c.getContext('2d');g.fillStyle=`rgba(255,255,255,${.7*(1-k)})`;g.fillRect(0,0,c.width,c.height);}
 }
 $('#btn-story').addEventListener('click',()=>{
-  if(storyStep===0){storyStep=1;setStory();sfx('boss');}else{sfx('item');startStage(10);}});
+  if(storyStep===0){storyStep=1;setStory();sfx('boss');}else{sfx('item');startStage(storyStage+1);}});
 
 /* ---------- 入力 ---------- */
 const keysDown=[];
